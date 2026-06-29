@@ -1,4 +1,10 @@
 
+### local ###
+.env
+.DS_Store
+.idea/
+### local ###
+
 ###> symfony/framework-bundle ###
 .env.local
 /.env.local

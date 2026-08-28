@@ -2,7 +2,7 @@
 
 namespace App\Shared\Domain\Bus\Command;
 
-class CommandHandler
+interface CommandHandler
 {
 
 }

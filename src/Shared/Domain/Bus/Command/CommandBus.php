@@ -2,7 +2,7 @@
 
 namespace App\Shared\Domain\Bus\Command;
 
-class CommandBus
+interface CommandBus
 {
-
+    public function dispatch(Command $command): void;
 }

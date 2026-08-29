@@ -42,6 +42,13 @@ src/
     Infrastructure/Bus/{Command,Query}/
 ```
 
+`Domain/` may be grouped into sub-namespaces by subdomain once a module has more than one —
+`Domain/MealPlan/`, `Domain/Streak/`, `Domain/Tier/` — and a port moves with the subdomain it
+serves. Grouping is optional and has to earn its place: a module with a single subject keeps
+`Domain/` flat. The other three layers keep the shape the invariants give them — `Application/`
+stays `Command/{UseCase}/` and `Query/{UseCase}/` (invariant 12), and grouping does not spread
+there.
+
 ### Dependency rule (strict, inward-pointing)
 
 `Adapter → Application → Domain ← Infrastructure`
@@ -95,6 +102,30 @@ route around. Stop and propose a wording change, citing the number. Never silent
 a rule, and never edit an invariant on your own initiative. This has already happened once:
 Messenger's `HandleTrait` violated invariant 34 as originally written, so the rule was narrowed
 to permit a framework-provided trait under `Infrastructure/` or `Adapter/` — not bypassed.
+
+
+## The todo trail
+
+A specification's Open questions state a *problem* the source could not answer. `docs/todo/<title>.md`
+holds the *chosen path and the work that remains*. The choice is made during `/contract` — the only
+step with a human in it — and only after that human has answered. Before the answer there is nothing
+to record; a decision taken without them is not a decision, it is a guess written down.
+
+One topic per file, kebab-case title. Each file states:
+
+- **what was decided** — the path chosen, in one sentence;
+- **which spec question it came from** — the document and the question, so the problem stays
+  reachable from the resolution;
+- **why** — citing the invariant by number where one drove the decision;
+- **what still has to be done** — the remaining work, concretely enough to act on;
+- **what would settle it** — the fact, measurement or ruling that would close the topic.
+
+An Open question the decision settles completely produces no file at all. `docs/todo/` records work
+that outlived the conversation, not minutes of it.
+
+A todo is closed by **deleting the file**, in the commit that finishes the work. `docs/todo/` shows
+current debt and never an archive of resolved items — a resolved item that stays is indistinguishable
+from an open one, and the directory stops being readable at a glance.
 
 # Invariants
 
@@ -153,3 +184,7 @@ Review comments cite these numbers, so the numbering is fixed.
 36. Do not add setters or mutable state to a DTO, and do not reuse one DTO across two use cases.
 37. Do not silence failures with `@`, an empty `catch`, or by downgrading a Domain exception to a `null` return.
 38. Do not commit `.env`, `.env.local`, credentials, tokens, or dumps of real data.
+
+## Porting existing behaviour
+
+39. Where a module reproduces behaviour that already exists somewhere else, it reproduces what the original **does**, not what it should have done — the specification of the original is the target, and an improvement smuggled in during the port is a behaviour change nobody reviewed. Where an invariant forbids reproducing that behaviour, do not quietly improve it and do not quietly break the invariant: stop, take it to a human at `/contract`, and record the outcome in `docs/todo/`, naming the invariant and stating plainly that the port is deliberately not equivalent at that point. A deliberate divergence is allowed; an undiscoverable one is a defect. The live example is `docs/specs/use-fodmap-streak.md`, which records that the original discards the `error` field of every query, so a failed fetch is indistinguishable from an empty history — invariant 37 forbids exactly that. Reproducing it violates 37; fixing it changes behaviour without saying so; only the third option, deciding with a human and writing the divergence down, is acceptable.

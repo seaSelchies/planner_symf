@@ -40,6 +40,22 @@ If a write is denied, that is the rule working, not an obstacle to route around.
 
 ## Procedure
 
+0. **Declare which step is running, before anything else.** The guards that keep each step in its
+   lane are `PreToolUse` hooks, and a hook stays registered for the rest of the session once its
+   skill has been invoked — so in a session where another step has already run, that step's guard
+   is still live and still denying every path that is not its own. The marker at `.claude/.step`
+   holds one line, the name of the step currently running; each guard enforces when the marker
+   names it and stands aside silently when it names another. Write it with `Bash` — the guards
+   intercept `Write`, so `Bash` is the one path that is always open:
+
+   ```bash
+   printf 'contract\n' > "$CLAUDE_PROJECT_DIR/.claude/.step"
+   ```
+
+   **This is not a formality and it is not optional.** Do it as the very first action, before
+   reading anything and long before any `Write`. A missing or empty marker fails closed: every
+   guard denies, and this skill cannot write a single file.
+
 1. **Read the specification and derive what the module needs.** Read the whole document, not the
    Cases table alone. **Hidden dependencies** names the collaborators that must become ports
    (invariant 9) and says whether current time is among them, in which case the clock is injected

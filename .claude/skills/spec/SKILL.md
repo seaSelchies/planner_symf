@@ -32,6 +32,22 @@ first and say in the report that this run replaces it.
 
 ## Procedure
 
+0. **Declare which step is running, before anything else.** The guards that keep each step in its
+   lane are `PreToolUse` hooks, and a hook stays registered for the rest of the session once its
+   skill has been invoked — so in a session where another step has already run, that step's guard
+   is still live and still denying every path that is not its own. The marker at `.claude/.step`
+   holds one line, the name of the step currently running; each guard enforces when the marker
+   names it and stands aside silently when it names another. Write it with `Bash` — the guards
+   intercept `Write`, so `Bash` is the one path that is always open:
+
+   ```bash
+   printf 'spec\n' > "$CLAUDE_PROJECT_DIR/.claude/.step"
+   ```
+
+   **This is not a formality and it is not optional.** Do it as the very first action, before
+   reading anything and long before any `Write`. A missing or empty marker fails closed: every
+   guard denies, and this skill cannot write a single file.
+
 1. **Read the source in full.** Every file in scope, top to bottom, including the ones the entry
    point calls. Never characterise code from a `grep` hit or a partial read — a `grep` locates
    code, it does not tell you what the code does. If a file is too large to read at once, read it

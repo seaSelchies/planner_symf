@@ -9,7 +9,10 @@ Pet project built to practice Backend PHP patterns.
 PHP + Symfony, PostgreSQL as the database, Doctrine as the ORM/query layer.
 Hexagonal Architecture (Ports & Adapters), organized module-first.
 
-Right now only the `Auth` module (plus `Shared`) exists. New modules follow the exact same shape.
+No domain module has landed on `main` yet — `Shared` holds the CQRS base and nothing else.
+The invariants below illustrate their rules with classes from the `Auth` module, which lives on
+the `feat/auth` branch; those names are examples, not files you will find here. The first module
+to land follows the shape described below.
 
 ## Tech stack
 

@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/migration-guard.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}

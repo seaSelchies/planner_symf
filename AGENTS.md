@@ -79,8 +79,8 @@ network. That is *why* every outbound dependency is a port rather than a direct 
 ## Module rule
 
 A new module reproduces the four-layer shape under its own `src/{NewModule}/` root and never
-places classes inside another module's folder. It also registers its own Doctrine mapping
-section in `config/packages/doctrine.yaml`, pointing at that module's `Domain` folder:
+places classes inside another module's folder. If it has Doctrine entities, it also registers its
+own mapping section in `config/packages/doctrine.yaml`, pointing at that module's `Domain` folder:
 
 ```yaml
 doctrine:
@@ -92,6 +92,13 @@ doctrine:
                 dir: '%kernel.project_dir%/src/{NewModule}/Domain'
                 prefix: 'App\{NewModule}\Domain'
 ```
+
+A module that reaches its data through DBAL has no entities to map and registers nothing —
+`Fodmap` has none yet, and needs none while it only reads. Keep the section honest in both
+directions: a mapping pointing at a folder that does not exist stops the container from building
+at all, and the test suite will not notice, because Domain and Application tests never boot the
+kernel. That happened once already, when `Auth` moved to a branch and its mapping stayed behind
+on `main`.
 
 Tests mirror the same layout: `tests/{Module}/{Layer}/...`. See `.claude/rules/tests.md`.
 

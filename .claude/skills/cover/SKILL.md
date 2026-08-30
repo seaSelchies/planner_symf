@@ -197,3 +197,10 @@ shows nothing outside `tests/`.
 - If an invariant or a rule in `.claude/rules/tests.md` blocks a test you believe is correct, stop
   and propose a wording change citing the number — never route around it silently (`AGENTS.md`,
   "When a rule blocks the task").
+- **A denied Write is a limitation to report, not an obstacle to route around.** The guard refuses
+  a path that already exists, so on a second pass over a module you cannot update a test you wrote
+  before, and you cannot update `CASE-COVERAGE.md`. Say so, name the file, and stop. Do not write
+  an addendum, a `-v2`, a `-part2` or any other parallel file that carries what the existing one
+  should have carried; do not reach for `Bash` to move or delete the file; do not ask for the hook
+  to be lifted. Split accounting is worse than missing accounting — a reader who finds one coverage
+  record has no way to know a second exists. Only a human decides how an existing file changes.

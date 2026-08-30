@@ -6,6 +6,6 @@ final class MealPlanDate
 {
     public function resolve(\DateTimeImmutable $weekStart, int $dayOfWeek): \DateTimeImmutable
     {
-        throw new \LogicException(sprintf('%s is not implemented', __METHOD__));
+        return $weekStart->modify(sprintf('%+d days', $dayOfWeek));
     }
 }

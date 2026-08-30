@@ -8,6 +8,6 @@ final class IngredientTierPrecedence
 {
     public function resolve(?FodmapTier $catalogueTier, ?FodmapTier $recipeTier): FodmapTier
     {
-        throw new \LogicException(sprintf('%s is not implemented', __METHOD__));
+        return $catalogueTier ?? $recipeTier ?? FodmapTier::Unknown;
     }
 }

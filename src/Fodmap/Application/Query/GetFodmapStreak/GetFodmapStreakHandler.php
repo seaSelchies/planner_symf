@@ -20,6 +20,13 @@ final class GetFodmapStreakHandler implements QueryHandler
 
     public function __invoke(GetFodmapStreakQuery $query): GetFodmapStreakResponse
     {
-        throw new \LogicException(sprintf('%s is not implemented', __METHOD__));
+        $today = $this->clock->now();
+
+        $plannedTiersByDate = $this->plannedTierProvider->plannedTiersByDate($today);
+        $loggedTiersByDate = $this->loggedTierProvider->loggedTiersByDate($today);
+
+        $streak = $this->calculator->streak($loggedTiersByDate, $plannedTiersByDate, $today);
+
+        return new GetFodmapStreakResponse($streak);
     }
 }

@@ -9,6 +9,14 @@ final class RecentMondays
      */
     public function lastN(\DateTimeImmutable $today, int $n): array
     {
-        throw new \LogicException(sprintf('%s is not implemented', __METHOD__));
+        $dayOfWeek = (int) $today->format('N');
+        $mostRecentMonday = $today->modify(sprintf('-%d days', $dayOfWeek - 1));
+
+        $mondays = [];
+        for ($i = 0; $i < $n; $i++) {
+            $mondays[] = $mostRecentMonday->modify(sprintf('-%d days', $i * 7));
+        }
+
+        return $mondays;
     }
 }

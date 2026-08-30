@@ -11,6 +11,6 @@ enum FodmapTier: string
 
     public function isBad(): bool
     {
-        throw new \LogicException(sprintf('%s is not implemented', __METHOD__));
+        return $this === self::Moderate || $this === self::High;
     }
 }

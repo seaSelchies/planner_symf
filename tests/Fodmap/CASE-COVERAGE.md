@@ -33,7 +33,7 @@ from `docs/todo/`. "Covered" links to the test; "Not covered" states the reason.
 | C19 | Covered — `FodmapStreakCalculatorTest::testStreak` (`'C19 ...'`). |
 | C20 | Covered — `FodmapStreakCalculatorTest::testStreak` (`'C20 ...'`). |
 | C21 | Covered — `FodmapStreakCalculatorTest::testStreak` (`'C21 ...'`). |
-| C22 | **Not covered.** "A `meal_plans` row whose computed date is after today is excluded from `planTiersByDate` entirely" is Infrastructure map-construction behavior (deciding whether a date-key gets created at all before `FodmapStreakCalculator` ever sees the map). No Domain counterpart is contracted for it — it lives inside `DoctrinePlannedTierProvider::plannedTiersByDate()`, still a throwing stub, and rule 11 (`.claude/rules/tests.md`) restricts DB-touching tests to `tests/{Module}/Infrastructure/`, against a real Postgres, which needs a migration that doesn't exist yet. Finding for `/contract`/`/build`: this case can only be tested once the provider is implemented and a migration exists. |
+| C22 | **Not covered.** "A `meal_plans` row whose computed date is after today is excluded from `planTiersByDate` entirely" is Infrastructure map-construction behavior (deciding whether a date-key gets created at all before `FodmapStreakCalculator` ever sees the map). No Domain counterpart is contracted for it — it lives inside `DoctrinePlannedTierProvider::plannedTiersByDate()`, still a throwing stub, and rule 11 (`.claude/rules/tests.md`) restricts DB-touching tests to `tests/{Module}/Infrastructure/`, against a real Postgres, which needs a migration that doesn't exist yet. This was reconsidered directly at `/contract` (the finding this file originally raised) and confirmed to belong here: `FodmapStreakCalculator::streak()` walks backward from `$today` only, so a future-dated map entry is inert to its output regardless of whether it's filtered at fetch time — there is no Domain rule being hidden, only Infrastructure data hygiene. `FodmapStreakCalculator`'s declared shape was left unchanged. This case can only be tested once the provider is implemented and a migration exists. |
 | C23 | Covered — `FodmapStreakCalculatorTest::testStreak` (`'C23 ...'`). |
 | C24 | Covered — `FodmapStreakCalculatorTest::testStreak` (`'C24 ...'`). |
 | C25 | **Partially covered.** The mechanism — the streak stops the instant a day is absent from both maps — is covered by `FodmapStreakCalculatorTest::testStreak` (`'C25 mechanism: ...'`). The ~112–118 day magnitude itself is an Infrastructure window-size detail (see `docs/todo/fodmap-streak-lookback-window.md`) with no Domain counterpart to assert a specific day count against. |
@@ -45,10 +45,10 @@ from `docs/todo/`. "Covered" links to the test; "Not covered" states the reason.
 
 | id | status |
 |----|--------|
-| C29 | **Not covered.** `ing.ingredients?.fodmap_tier ?? ing.fodmap_tier ?? 'unknown'` precedence has no Domain counterpart — `/contract` did not declare a class for this resolution; it is implicitly left inside `DoctrinePlannedTierProvider`/`DoctrineLoggedTierProvider`, both throwing stubs, and needs a real Postgres integration test once implemented (rule 11). **Finding for `/contract`:** this precedence rule is real, spec-mandated business logic (C29–C32 all target it directly) but currently has no unit-testable home; consider whether it deserves its own Domain class the way `MealPlanDate`/`RecentMondays` do, so it can be tested without a database. |
-| C30 | **Not covered.** Same reason as C29. |
-| C31 | **Not covered.** Same reason as C29. |
-| C32 | **Not covered.** Same reason as C29. |
+| C29 | Covered — `tests/Fodmap/Domain/MealPlan/IngredientTierPrecedenceTest::testResolve` (`'C29 ...'`). The precedence rule was given a Domain home, `IngredientTierPrecedence`, in the `/contract` round that followed this file's original finding — see `docs/todo/fodmap-streak-ingredient-tier-precedence.md`. |
+| C30 | Covered — `IngredientTierPrecedenceTest::testResolve` (`'C30 ...'`). |
+| C31 | Covered — `IngredientTierPrecedenceTest::testResolve` (`'C31 ...'`). |
+| C32 | Covered — `IngredientTierPrecedenceTest::testResolve` (`'C32 ...'`). |
 
 ## Todo-derived cases
 

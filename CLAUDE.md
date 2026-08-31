@@ -21,9 +21,13 @@ live in `.env`, which is untracked.
 php bin/console doctrine:migrations:migrate
 ```
 
-A new migration is written by hand on the model of `migrations/Version20260722160749.php`:
-DBAL `SchemaManager` API, guarded by an existence check. Do not use
-`doctrine:migrations:diff` — it emits raw SQL, which invariant 7 forbids.
+A new migration is expressed through the DBAL schema API, as in
+`migrations/Version20260722160749.php`. Raw SQL via
+`addSql()` is for a construct that API cannot express — a `CHECK` constraint, a partial or
+expression index, an enum type, a data backfill — and the reason is named in a comment
+directly above the call.
+Do not use `doctrine:migrations:diff` — it emits SQL for everything, including what the
+schema API does express, so its output is not the form invariant 7 requires.
 
 ## Tests
 

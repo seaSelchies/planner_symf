@@ -74,6 +74,12 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
 | C31 | `{ recipe_id: "r1", fodmap_tier: null, ingredients: null }` — neither source present | resolved tier `"unknown"` (last resort) |
 | C32 | `{ recipe_id: "r1", fodmap_tier: "low", ingredients: { fodmap_tier: null } }` — joined row present but its `fodmap_tier` is `null` | resolved tier `"low"` (the `null` from the joined row is nullish-coalesced past, falling to the `recipe_ingredients.fodmap_tier` column — **not** straight to `"unknown"`) |
 
+**C29–C32 describe the query as the code names it, not as the live schema can answer it —
+see Discrepancies.** `docs/specs/use-fodmap-streak-schema.md` (Cases S17–S20) establishes
+that `recipe_ingredients.fodmap_tier` no longer exists in the current schema; these four
+cases are still correct statements of what the *code* does, and are exactly the four cases
+a faithful port must decide how to treat given that the column they name is gone.
+
 ## Edge cases
 
 - **Empty `meal_plans` result:** `plans` is `null`/`[]` → `recipeIds` is `[]` → the
@@ -95,11 +101,17 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
   `ing.fodmap_tier` and resolves to that real column value (C32). `'unknown'` is only
   reached when both the joined tier and the column tier are missing (C31).
 - **Duplicate rows for the same date** (two plans, two logs) are merged by
-  concatenation, not overwritten or deduplicated (C27, C28).
+  concatenation, not overwritten or deduplicated (C27, C28). The schema bounds this to
+  at most 3 rows per date on each side — one per `meal_type` — per
+  `docs/specs/use-fodmap-streak-schema.md` S8/S9, never an unbounded number.
 - **Future-dated plan rows** (`date > today`) are explicitly skipped before entering
   `planTiersByDate` (C22).
-- **`day_of_week` outside 0–6:** no validation; `mealPlanDate` just offsets by that many
-  days from `week_start`, silently producing a date outside the intended week (C6).
+- **`day_of_week` outside 0–6:** no validation in `mealPlanDate`; it just offsets by that
+  many days from `week_start`, silently producing a date outside the intended week (C6).
+  The schema *does* validate this at the database boundary — `meal_plans.day_of_week` has
+  `CHECK (day_of_week BETWEEN 0 AND 6)` (schema spec S6) — so C6 can only ever be observed
+  for a `day_of_week` value the code computed or received in memory, never for one read
+  back from a real row in this schema.
 - **Implicit lookback window:** `meal_plans` is filtered to the last 16 Mondays
   (`.in('week_start', weekStarts)`) and `meal_logs` to `[today - 112 days, today]`. Both
   windows are ~16 weeks but are computed differently (discrete Monday list vs.
@@ -108,6 +120,9 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
 - **Query errors are unobserved:** none of the three Supabase calls check the `error`
   field; every result is coalesced with `?? []`/`?? null`, so a failed fetch is
   indistinguishable from "no data" and silently reports a lower (or zero) streak (C26).
+- **`meal_plans.is_leftover`** (added to the schema after this hook was last touched;
+  `docs/specs/use-fodmap-streak-schema.md` S21) has no corresponding filter anywhere in
+  Step 1 — a leftover-flagged plan slot is read and counted identically to any other slot.
 - **Timezone/locale dependency:** `toISO`, `lastNMondays`, and the oldest-date
   calculation all use local `Date` accessors (`getFullYear`, `getMonth`, `getDate`,
   `getDay`, `setDate`), so "today" and "this week's Monday" are the browser's local
@@ -130,6 +145,17 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
   `recipe_ingredients` joined to `ingredients`, `meal_logs` joined to
   `meal_log_ingredients`) are direct I/O. Must become a Domain port (or ports) —
   e.g. a read port for plan data and a read port for log data — per invariant 9.
+- **The authenticated user, enforced by Postgres row-level security, not by anything in
+  this file.** No query here names a user anywhere — no `.eq('user_id', ...)` on any of
+  the three calls. `docs/specs/use-fodmap-streak-schema.md` establishes that every table
+  read (`meal_plans`, `recipe_ingredients`, `meal_logs`, `meal_log_ingredients`) is
+  restricted by RLS to `auth.uid()`, invisibly, and that `ingredients` — the one table
+  that is not user-scoped — is the exception, not the rule. A Doctrine-backed port has no
+  equivalent enforcement: **the current user must become an explicit port parameter**,
+  or a provider written against this hook's literal code (no user anywhere) will return
+  every user's data. This is a correction to the assumption recorded when this module's
+  shape was first proposed at `/contract` — see that step's session for the "user scoping
+  is out of scope" note, which this finding supersedes.
 - **Current time (`new Date()`)**, used four separate times: computing `today`,
   computing `weekStarts` in `lastNMondays`, computing `oldestDate`, and initializing the
   loop `cursor` in Step 7. Per invariant 22, all of these must come from one injected
@@ -158,6 +184,21 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
 - Query failures are never surfaced (no `error` check on any of the three Supabase
   calls) — a network or permissions failure produces the same result as "no history",
   silently underreporting the streak instead of signaling a fetch error (C26).
+- **The code's query column references do not match the current schema.** As of
+  migration 026 (`docs/specs/use-fodmap-streak-schema.md`, Discrepancies and S17–S20),
+  `recipe_ingredients.fodmap_tier`, `recipe_ingredients.ingredient_name`,
+  `meal_log_ingredients.fodmap_tier`, and `meal_log_ingredients.ingredient_name` have all
+  been dropped from the schema. Step 2's `.select('recipe_id, fodmap_tier,
+  ingredients(fodmap_tier)')` and Step 4's `.select('id, date,
+  meal_log_ingredients(fodmap_tier)')` each name at least one column that no longer
+  exists. Combined with the unchecked `error` field (previous point), this file's C29–C32
+  behavior may not be reachable at all against the live database today — see the schema
+  spec for exactly what would need confirming to know for certain. This specification
+  still records C29–C32 as what the *code* does, per this skill's rule that a branch's
+  behavior is recorded even where it may no longer be exercisable; whether a port should
+  target this literal (possibly inert) behavior or the schema's actual current shape
+  (`ingredient_id` → `ingredients.fodmap_tier` on both `recipe_ingredients` and
+  `meal_log_ingredients`) is recorded under Open questions, not decided here.
 
 ## Open questions
 
@@ -174,6 +215,23 @@ Ingredient tier resolution (Step 2, one `recipe_ingredients` row → one tier st
   instead of being treated as an empty result set? The current code cannot distinguish
   "no history" from "fetch failed," and it is unclear whether that was intentional.
 - What is the intended behavior for a `meal_plans.day_of_week` value outside `0`–6`?
-  The code has no guard and silently computes a date outside the plan's week; whether
-  the database schema already prevents this (making the case unreachable) could not be
-  determined from this file alone.
+  The code has no guard and silently computes a date outside the plan's week; the schema
+  spec (S6) confirms the database itself rejects such a row at write time via a `CHECK`
+  constraint, so this branch is reachable only through in-memory values the code
+  constructs itself, never through a row actually read back from this schema.
+- **Should the ported module target the literal current queries (Step 2/Step 4's named
+  columns, several of which are now dropped) or the columns the schema shows are
+  actually live (`ingredient_id` → `ingredients.fodmap_tier`)?** This is the single
+  highest-stakes open question this specification and its schema companion raise
+  together. Reproducing the literal code risks porting behavior that is already inert in
+  production; silently "fixing" it to use the live columns is exactly the kind of
+  undirected improvement invariant 39 puts to a human rather than to this document.
+- **Do the ports this module already declared (`PlannedTierProvider`,
+  `LoggedTierProvider`) need a user-identifying parameter added to their signature?**
+  The schema shows every table they read is RLS-scoped to the caller; nothing in a
+  Doctrine-backed implementation provides that automatically. This changes a shape
+  `/contract` already agreed with a human and needs to go back to that step, not be
+  decided here.
+- Should `meal_plans.is_leftover` slots be excluded from the plan-tier fetch? The schema
+  shows the column exists and postdates this hook; the code has no opinion about it one
+  way or the other, and neither does anything else read for this specification.

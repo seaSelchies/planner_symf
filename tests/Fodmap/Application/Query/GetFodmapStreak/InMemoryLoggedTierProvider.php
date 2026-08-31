@@ -6,6 +6,7 @@ use App\Fodmap\Domain\MealLog\LoggedTierProvider;
 
 final class InMemoryLoggedTierProvider implements LoggedTierProvider
 {
+    private ?string $receivedUserId = null;
     private ?\DateTimeImmutable $receivedToday = null;
 
     public function __construct(
@@ -14,8 +15,9 @@ final class InMemoryLoggedTierProvider implements LoggedTierProvider
     ) {
     }
 
-    public function loggedTiersByDate(\DateTimeImmutable $today): array
+    public function loggedTiersByDate(string $userId, \DateTimeImmutable $today): array
     {
+        $this->receivedUserId = $userId;
         $this->receivedToday = $today;
 
         if ($this->throws !== null) {
@@ -23,6 +25,11 @@ final class InMemoryLoggedTierProvider implements LoggedTierProvider
         }
 
         return $this->tiersByDate;
+    }
+
+    public function receivedUserId(): ?string
+    {
+        return $this->receivedUserId;
     }
 
     public function receivedToday(): ?\DateTimeImmutable

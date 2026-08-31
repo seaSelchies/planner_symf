@@ -11,6 +11,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ApiGetFodmapStreakController
 {
+    // Placeholder until an Auth module resolves the real current user — see
+    // docs/todo/fodmap-streak-user-scoping.md.
+    private const PLACEHOLDER_USER_ID = '325c4450-a5b7-46e8-aee5-9d9a5e2d0bb1';
+
     public function __construct(
         private readonly QueryBus $queryBus,
     ) {
@@ -21,7 +25,7 @@ final class ApiGetFodmapStreakController
     {
         try {
             /** @var GetFodmapStreakResponse $response */
-            $response = $this->queryBus->ask(new GetFodmapStreakQuery());
+            $response = $this->queryBus->ask(new GetFodmapStreakQuery(self::PLACEHOLDER_USER_ID));
         } catch (FodmapDataFetchException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 503);
         }

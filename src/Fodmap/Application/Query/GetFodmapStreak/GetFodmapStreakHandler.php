@@ -22,8 +22,8 @@ final class GetFodmapStreakHandler implements QueryHandler
     {
         $today = $this->clock->now();
 
-        $plannedTiersByDate = $this->plannedTierProvider->plannedTiersByDate($today);
-        $loggedTiersByDate = $this->loggedTierProvider->loggedTiersByDate($today);
+        $plannedTiersByDate = $this->plannedTierProvider->plannedTiersByDate($query->userId, $today);
+        $loggedTiersByDate = $this->loggedTierProvider->loggedTiersByDate($query->userId, $today);
 
         $streak = $this->calculator->streak($loggedTiersByDate, $plannedTiersByDate, $today);
 

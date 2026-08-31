@@ -6,6 +6,7 @@ use App\Fodmap\Domain\MealPlan\PlannedTierProvider;
 
 final class InMemoryPlannedTierProvider implements PlannedTierProvider
 {
+    private ?string $receivedUserId = null;
     private ?\DateTimeImmutable $receivedToday = null;
 
     public function __construct(
@@ -14,8 +15,9 @@ final class InMemoryPlannedTierProvider implements PlannedTierProvider
     ) {
     }
 
-    public function plannedTiersByDate(\DateTimeImmutable $today): array
+    public function plannedTiersByDate(string $userId, \DateTimeImmutable $today): array
     {
+        $this->receivedUserId = $userId;
         $this->receivedToday = $today;
 
         if ($this->throws !== null) {
@@ -23,6 +25,11 @@ final class InMemoryPlannedTierProvider implements PlannedTierProvider
         }
 
         return $this->tiersByDate;
+    }
+
+    public function receivedUserId(): ?string
+    {
+        return $this->receivedUserId;
     }
 
     public function receivedToday(): ?\DateTimeImmutable

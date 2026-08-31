@@ -12,5 +12,5 @@ interface LoggedTierProvider
      *
      * @throws FodmapDataFetchException
      */
-    public function loggedTiersByDate(\DateTimeImmutable $today): array;
+    public function loggedTiersByDate(string $userId, \DateTimeImmutable $today): array;
 }

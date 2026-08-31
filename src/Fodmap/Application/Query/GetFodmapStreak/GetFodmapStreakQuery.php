@@ -6,7 +6,8 @@ use App\Shared\Domain\Bus\Query\Query;
 
 final class GetFodmapStreakQuery implements Query
 {
-    public function __construct()
-    {
+    public function __construct(
+        public readonly string $userId,
+    ) {
     }
 }

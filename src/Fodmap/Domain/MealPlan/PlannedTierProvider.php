@@ -12,5 +12,5 @@ interface PlannedTierProvider
      *
      * @throws FodmapDataFetchException
      */
-    public function plannedTiersByDate(\DateTimeImmutable $today): array;
+    public function plannedTiersByDate(string $userId, \DateTimeImmutable $today): array;
 }

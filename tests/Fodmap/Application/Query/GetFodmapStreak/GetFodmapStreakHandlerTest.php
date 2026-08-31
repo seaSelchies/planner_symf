@@ -14,10 +14,15 @@ use PHPUnit\Framework\TestCase;
  * Case id, see tests/Fodmap/CASE-COVERAGE.md — and T:fodmap-streak-fetch-error-handling
  * (docs/todo/fodmap-streak-fetch-error-handling.md): a provider's fetch failure must propagate
  * out of the handler uncaught, per .claude/rules/application-layer.md rule 2.
+ *
+ * Also covers the Application-layer half of T:fodmap-streak-user-scoping
+ * (docs/todo/fodmap-streak-user-scoping.md): the handler must pass the query's userId through to
+ * both providers unchanged. The Infrastructure-layer half (a real Postgres query actually scoped
+ * to that user) is not covered here — see tests/Fodmap/CASE-COVERAGE.md.
  */
 final class GetFodmapStreakHandlerTest extends TestCase
 {
-    public function testBothProvidersReceiveTheSameInstantFromASingleClockRead(): void
+    public function testBothProvidersReceiveTheSameUserIdAndTheSameInstantFromASingleClockRead(): void
     {
         $today = new \DateTimeImmutable('2026-08-29');
         $plannedProvider = new InMemoryPlannedTierProvider();
@@ -30,8 +35,10 @@ final class GetFodmapStreakHandlerTest extends TestCase
             new FodmapStreakCalculator(),
         );
 
-        $handler(new GetFodmapStreakQuery());
+        $handler(new GetFodmapStreakQuery('user-1'));
 
+        self::assertSame('user-1', $plannedProvider->receivedUserId());
+        self::assertSame('user-1', $loggedProvider->receivedUserId());
         self::assertEquals($today, $plannedProvider->receivedToday());
         self::assertEquals($today, $loggedProvider->receivedToday());
     }
@@ -49,7 +56,7 @@ final class GetFodmapStreakHandlerTest extends TestCase
         );
 
         try {
-            $handler(new GetFodmapStreakQuery());
+            $handler(new GetFodmapStreakQuery('user-1'));
             self::fail('Expected FodmapDataFetchException to propagate uncaught.');
         } catch (FodmapDataFetchException $e) {
             self::assertSame('planned tier fetch failed', $e->getMessage());
@@ -69,7 +76,7 @@ final class GetFodmapStreakHandlerTest extends TestCase
         );
 
         try {
-            $handler(new GetFodmapStreakQuery());
+            $handler(new GetFodmapStreakQuery('user-1'));
             self::fail('Expected FodmapDataFetchException to propagate uncaught.');
         } catch (FodmapDataFetchException $e) {
             self::assertSame('logged tier fetch failed', $e->getMessage());

@@ -13,4 +13,9 @@ enum FodmapTier: string
     {
         return $this === self::Moderate || $this === self::High;
     }
+
+    public static function orUnknown(?self $catalogueTier): self
+    {
+        return $catalogueTier ?? self::Unknown;
+    }
 }

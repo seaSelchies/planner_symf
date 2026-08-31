@@ -13,7 +13,13 @@ hooks:
 
 # Build
 
-`/spec` established **what** a module does. `/contract` declared **what shape** it takes, with every
+The pipeline is `/spec` → `/entity` → `/contract` → `/cover` → `/build`, and `/entity` is
+conditional: it runs only where `/spec` produced a schema specification, that is, only where the
+source reaches a database. A module that reaches none goes `/spec` → `/contract` → `/cover` → this
+step. Either way this step is the last one.
+
+`/spec` established **what** a module does. `/entity`, where it ran, wrote the Doctrine entities that
+carry the module's mapping metadata. `/contract` declared **what shape** the module takes, with every
 method body a `throw`. `/cover` turned the specification's cases into **tests that fail** on those
 throws. This step replaces the throws with **behaviour**, until the suite is green — and changes
 nothing else.
@@ -23,7 +29,7 @@ is the whole design: the finish line was drawn by `/cover`, in files this step c
 
 ## This step is the only one that edits existing files
 
-The three steps before it create. This one replaces stub bodies, so `Edit` and `MultiEdit` stay in
+The steps before it create. This one replaces stub bodies, so `Edit` and `MultiEdit` stay in
 the tool pool and the guard cannot ask "may this file be created" — it asks **"may this file be
 touched at all"**.
 
@@ -36,14 +42,17 @@ The answer is `src/<Module>/` and nothing else. A `PreToolUse` hook matches `Wri
 - **`docs/` is denied.** A todo is closed by deleting its file in the commit that finishes the work
   (`AGENTS.md`, "The todo trail"), and this step does not commit. Report which todos the work
   satisfies and leave the deletion to a human.
-- **`config/`, `migrations/` and the repository root are denied.** The Doctrine mapping a new module
-  needs and any migration are deliberate human edits — invariant 7 requires a hand-written
-  migration, and `AGENTS.md` requires the mapping section to be registered by hand.
+- **`config/`, `migrations/` and the repository root are denied.** `migrations/` is outside this
+  step's lane, and a migration is applied only after a human has approved it (invariant 7). The
+  Doctrine mapping a new module needs is a deliberate human edit — `AGENTS.md` requires the mapping
+  section to be registered by hand.
 - **`src/Shared/` is denied.** The CQRS base has already landed; this step implements a module
   against it, not the base itself.
 
 If a write is denied, that is the rule working, not an obstacle to route around. Not with `Bash`,
-not by asking for the hook to be lifted.
+not by asking for the hook to be lifted. The guards match the editing tools; a shell
+command is not something a `PreToolUse` hook can inspect for the files it changes, so what holds
+here is the rule, not the hook.
 
 ## Procedure
 
@@ -52,12 +61,18 @@ not by asking for the hook to be lifted.
    skill has been invoked — so in a session where another step has already run, that step's guard
    is still live and still denying every path that is not its own. The marker at `.claude/.step`
    holds one line, the name of the step currently running; each guard enforces when the marker
-   names it and stands aside silently when it names another. Write it with `Bash` — the guards
-   intercept the editing tools, so `Bash` is the one path that is always open:
+   names it and stands aside silently when it names another. Declare this step with an ordinary
+   `Write` to `.claude/.step`, whose whole content is the one line:
 
-   ```bash
-   printf 'build\n' > "$CLAUDE_PROJECT_DIR/.claude/.step"
    ```
+   build
+   ```
+
+   Every registered guard allows this Write, because the name is a step that exists — that is
+   what lets a second step declare itself in a session where an earlier one already ran. This
+   step's own guard does one more thing as it allows it: it records in `.claude/.step.live`
+   that it is live in this session. That record is what the other guards read before standing
+   aside, so a marker written any other way stands nothing down.
 
    **This is not a formality and it is not optional.** Do it as the very first action, before
    reading anything and long before any edit. **Nothing can be edited before this** — a missing or
@@ -99,6 +114,14 @@ not by asking for the hook to be lifted.
    What does belong here is implementation with no shape of its own: a `private` method on a class
    that is already declared, a local variable, a `match` arm. If the behaviour genuinely needs a new
    collaborator, stop and say which and why — the same finding, the same route back.
+
+   **A mapping that will not carry the query is the same move a third time.** This step writes the
+   Infrastructure adapters that read these tables through DQL, and when a query will not build, the
+   shortest fix is to widen a column, add an association or relax a property type. That edit changes
+   the schema the database is required to have — with no migration, no `/entity` run, no ownership
+   gate and no todo — and nothing in the suite would catch it, because nothing in the suite touches
+   a database. Say which query, against which mapping, and what the mapping would need. It is a
+   finding for your report and a reason to run `/entity`, never a mapping edit made here.
 
 3. **Implement the deliberate divergences as recorded, not as the original had them.** Invariant 39
    allows a port to diverge from the original where an invariant forbids reproducing it, provided
@@ -181,6 +204,13 @@ and do not paper over a missing alias by constructing an implementation with `ne
 - Do not add a Composer dependency (invariant 31) — Symfony 8.1 and Doctrine already provide what
   this module needs, and `symfony/clock` is already installed.
 - Do not change a test, a fake, `CASE-COVERAGE.md`, a specification, a todo, or configuration.
+- **An entity's methods are this step's; its mapping is `/entity`'s.** A getter, a derived value, a
+  question the class can answer — write those. The *mapping surface* is every Doctrine mapping
+  attribute line together with every typed property declaration line, and the guard compares it
+  between the file on disk and what you write: identical, and the write goes through; an attribute
+  added, removed, reordered or altered, or a property retyped, and it is denied. `Edit` and
+  `MultiEdit` on an entity are denied outright — a fragment cannot be compared, so replace the whole
+  file with `Write`. This step also may not turn a class that is not an entity into one.
 - Do not change a declared signature (step 2).
 - Do not implement a stub in a module this run was not asked to build.
 
@@ -212,7 +242,9 @@ nothing changed outside `src/<Module>/`.
 - **Do not commit.** A todo is closed by deleting its file in the commit that finishes the work, and
   that commit is a human's.
 - **A denied edit is a limitation to report, not an obstacle to route around.** Not with `Bash`, not
-  by asking for the hook to be lifted, not by writing the change somewhere the guard permits.
+  by asking for the hook to be lifted, not by writing the change somewhere the guard permits. The
+  guard matches the editing tools, so `Bash` is not a wall this step meets — it is a rule this step
+  keeps.
 - If an invariant or a rule in `.claude/rules/` blocks an implementation you believe is correct,
   stop and propose a wording change citing the number — never route around it silently
   (`AGENTS.md`, "When a rule blocks the task").

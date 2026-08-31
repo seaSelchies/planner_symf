@@ -1,6 +1,6 @@
 ---
 name: cover
-description: Turn a behaviour specification's cases and the declarations /contract produced into failing PHPUnit tests under tests/<Module>/ — red on assertions and on the throwing stubs, never on autoload. Use after /contract and before /build; never for implementing behaviour, which this skill cannot do.
+description: Turn a behaviour specification's cases and the declarations /contract produced into failing PHPUnit tests under tests/<Module>/ — red on assertions and on the throwing stubs, never on autoload. Use after /contract and before /build. The guard denies writes outside tests/; implementing behaviour is forbidden by rule, not by the guard.
 argument-hint: [path to the spec in docs/specs/, plus the module name whose declarations it was turned into]
 disallowed-tools: Edit MultiEdit NotebookEdit
 hooks:
@@ -13,9 +13,15 @@ hooks:
 
 # Cover
 
-`/spec` established **what** a module does and wrote a case table. `/contract` turned the shape
-that table describes into declarations whose every method body throws. This step turns those cases
-into **PHPUnit tests that fail** — on assertions and on the stubs, never on autoload.
+The pipeline is `/spec` → `/entity` → `/contract` → `/cover` → `/build`, and `/entity` is
+conditional: it runs only where `/spec` produced a schema specification, that is, only where the
+source reaches a database. A module that reaches none goes `/spec` → `/contract` → this step, and
+nothing about this step changes either way.
+
+`/spec` established **what** a module does and wrote a case table. `/entity`, where it ran, wrote the
+Doctrine entities that carry the module's mapping metadata. `/contract` turned the shape that table
+describes into declarations whose every method body throws. This step turns those cases into
+**PHPUnit tests that fail** — on assertions and on the stubs, never on autoload.
 
 It is the last step before behaviour exists, and the only guarantee that `/build` is finished by
 something other than its own opinion. A case with no test is a case `/build` is free to ignore.
@@ -33,10 +39,10 @@ todo written here would be minutes of a conversation that never happened with a 
 ## This skill never implements behaviour
 
 `Edit`, `MultiEdit` and `NotebookEdit` are removed from the tool pool by the front matter, so no
-existing file can be modified. `Write` stays for new test files only.
+existing file can be modified through them. `Write` stays for test files only.
 
-**The only paths this skill may write are new files under `tests/`.** A `PreToolUse` hook enforces
-it and denies everything else:
+**The only paths this skill may write are files under `tests/`.** A `PreToolUse` hook enforces it
+and denies everything else:
 
 - `src/` is denied outright. This step never touches the module it tests. A stub "helpfully"
   implemented here destroys the only evidence that the tests bite — a green suite over a module
@@ -44,10 +50,16 @@ it and denies everything else:
 - `docs/` is denied, `docs/todo/` included: `/spec` owns the specification, `/contract` owns the
   todo trail.
 - `config/` and `migrations/` belong to a human.
-- A file under `tests/` that already exists is denied too — this step only creates.
+
+Inside `tests/`, a file that already exists **may** be overwritten. A step that can only ever add is
+a step with one pass, and the ban cost more than it saved: three times the pipeline could not revise
+its own output and a human had to delete files so it could regenerate them. What protects the lane
+is the lane check; what protects the accounting is step 3 below.
 
 If a write is denied, that is the rule working, not an obstacle to route around. Not with `Bash`,
-not by asking for the hook to be lifted.
+not by asking for the hook to be lifted. The guards match the editing tools; a shell
+command is not something a `PreToolUse` hook can inspect for the files it changes, so what holds
+here is the rule, not the hook.
 
 ## Procedure
 
@@ -56,12 +68,18 @@ not by asking for the hook to be lifted.
    skill has been invoked — so in a session where another step has already run, that step's guard
    is still live and still denying every path that is not its own. The marker at `.claude/.step`
    holds one line, the name of the step currently running; each guard enforces when the marker
-   names it and stands aside silently when it names another. Write it with `Bash` — the guards
-   intercept `Write`, so `Bash` is the one path that is always open:
+   names it and stands aside silently when it names another. Declare this step with an ordinary
+   `Write` to `.claude/.step`, whose whole content is the one line:
 
-   ```bash
-   printf 'cover\n' > "$CLAUDE_PROJECT_DIR/.claude/.step"
    ```
+   cover
+   ```
+
+   Every registered guard allows this Write, because the name is a step that exists — that is
+   what lets a second step declare itself in a session where an earlier one already ran. This
+   step's own guard does one more thing as it allows it: it records in `.claude/.step.live`
+   that it is live in this session. That record is what the other guards read before standing
+   aside, so a marker written any other way stands nothing down.
 
    **This is not a formality and it is not optional.** Do it as the very first action, before
    reading anything and long before any `Write`. A missing or empty marker fails closed: every
@@ -101,6 +119,15 @@ not by asking for the hook to be lifted.
    sentence belongs in the coverage record verbatim.
 
    A silently missing case is the failure mode this whole step exists to prevent.
+
+   **When `tests/<Module>/CASE-COVERAGE.md` already exists, read it before writing it.** This step
+   may overwrite an existing file in its own lane, so a second pass over a module rewrites the
+   coverage record rather than being refused — and a rewrite that quietly drops a case is exactly
+   the regression the old refusal was guarding against. So: read the existing record first, then
+   **report every case id whose status changed in this run, in both directions** — each id that was
+   not covered and now is, and each id that **was covered and is not any more**, naming the test that
+   used to cover it and why it no longer does. A case that lost its coverage is named out loud or
+   the accounting is worthless. Where nothing changed, say that too.
 
 4. **Add the cases the spec could not contain.** Each `docs/todo/` file states what would settle
    it, and where that includes a test, this step writes it. Those cases get **ids of their own,
@@ -186,6 +213,9 @@ shows nothing outside `tests/`.
 - the **file list** — every path written;
 - the **case-id accounting in full** — every id from the spec's tables, covered or not, with the
   test that covers it or the reason it has none, plus the todo-derived ids from step 4;
+- where a `CASE-COVERAGE.md` was already there, **every id whose status changed in this run, in both
+  directions** — gained coverage, and lost it — or a plain statement that none did;
+- every **existing file overwritten**, by path, and what the new version changed;
 - the **phpunit summary line**, verbatim;
 - anything **the contracts could not express** — a case whose inputs have no counterpart in the
   declared signatures, stated as a finding for `/contract`, not resolved here.
@@ -198,9 +228,12 @@ shows nothing outside `tests/`.
   and propose a wording change citing the number — never route around it silently (`AGENTS.md`,
   "When a rule blocks the task").
 - **A denied Write is a limitation to report, not an obstacle to route around.** The guard refuses
-  a path that already exists, so on a second pass over a module you cannot update a test you wrote
-  before, and you cannot update `CASE-COVERAGE.md`. Say so, name the file, and stop. Do not write
-  an addendum, a `-v2`, a `-part2` or any other parallel file that carries what the existing one
-  should have carried; do not reach for `Bash` to move or delete the file; do not ask for the hook
-  to be lifted. Split accounting is worse than missing accounting — a reader who finds one coverage
-  record has no way to know a second exists. Only a human decides how an existing file changes.
+  every path outside `tests/`; say so, name the file, and stop. Do not reach for `Bash` to write it
+  anyway and do not ask for the hook to be lifted. The guard matches the editing tools, so `Bash`
+  is not a wall this step meets — it is a rule this step keeps.
+- **Inside `tests/`, rewrite the file rather than growing a parallel one.** A second pass over a
+  module updates the test it wrote before and rewrites `CASE-COVERAGE.md` in place. Never an
+  addendum, a `-v2`, a `-part2` or any other file carrying what the existing one should have
+  carried: split accounting is worse than missing accounting, because a reader who finds one
+  coverage record has no way to know a second exists. The price of being allowed to overwrite is the
+  status-change report in step 3 — a rewrite without it is the defect the old refusal prevented.

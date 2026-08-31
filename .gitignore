@@ -30,6 +30,9 @@
 CLAUDE.local.md
 .claude/settings.local.json
 # Per-session state: the name of the workflow step currently running, written by each
-# skill at step 0 and read by the PreToolUse write guards. Not shared configuration.
+# skill at step 0 and read by the PreToolUse write guards, alongside the record of which
+# guard has actually run in this session — the two together are what let one guard stand
+# aside for another. Not shared configuration.
 .claude/.step
+.claude/.step.live
 ### claude ###

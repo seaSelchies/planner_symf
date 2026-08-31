@@ -128,26 +128,6 @@ here is the rule, not the hook.
    the divergence was decided with a human and written down. Those decisions are in `docs/todo/`,
    and reverting one here undoes a decision a human took.
 
-   For this module:
-
-   - `docs/todo/fodmap-streak-fetch-error-handling.md` decided that a failed fetch throws
-     `FodmapDataFetchException` and aborts the query, rather than being swallowed into an empty
-     result the way the original's `?? []` does — because **invariant 37** forbids the original's
-     behaviour. The handler lets it propagate (`.claude/rules/application-layer.md`, rule 2); the
-     controller is the only layer that maps it, to a 5xx body `{"error": "<message>"}` (invariants
-     29, 20).
-   - `docs/todo/fodmap-streak-ingredient-tier-precedence.md` decided the catalogue-over-recipe
-     precedence rule gets a Domain home, `IngredientTierPrecedence`, instead of staying implicit
-     inside the adapter — **invariant 21**. It also states the wiring this step owes: inject it into
-     `DoctrinePlannedTierProvider`'s constructor, and convert each raw column with
-     `FodmapTier::tryFrom()` before calling `resolve()`.
-   - `docs/todo/fodmap-streak-lookback-window.md` decided the plan-side and log-side windows share
-     one definition instead of being computed independently — **so far as it is decided**. The todo
-     explicitly leaves the window's concrete shape and its configurability open, and says to default
-     to the literal 16 Mondays / 112 days or raise configurability with a human. Implement the
-     shared definition; do not settle the open half on your own, and say in the report which half you
-     implemented and which you left.
-
 4. **Work in small steps and run the suite often.**
 
    ```bash

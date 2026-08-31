@@ -3,11 +3,14 @@
 namespace App\Fodmap\Domain\Streak;
 
 /**
- * The one window definition both DoctrinePlannedTierProvider and DoctrineLoggedTierProvider
- * derive their date range from, per docs/todo/fodmap-streak-lookback-window.md — so the two
- * sources cannot silently disagree on how far back they look. The concrete length (16 weeks,
- * matching the original's literal 16 Mondays / 112 days) and whether it becomes configurable are
- * left open by that todo; this is the default it explicitly allows.
+ * The lookback length both providers share.
+ *
+ * The two windows share this length and one $today, and stop there: the plan side
+ * walks a discrete list of Mondays, the log side a continuous range of days, so
+ * their edges do not coincide. That is what the ported source does, and it is kept
+ * deliberately rather than unified — see the Edge cases section of
+ * docs/specs/use-fodmap-streak.md. There is no test asserting the two agree,
+ * because they are not meant to.
  */
 final class LookbackWindow
 {

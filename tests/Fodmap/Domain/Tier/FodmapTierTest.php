@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
  *
  * C29–C32 originally covered a two-source precedence rule (IngredientTierPrecedence), retired at
  * /contract once the schema showed only one source (ingredient_id → ingredients.fodmap_tier)
- * remains on either side (docs/todo/fodmap-streak-ingredient-tier-precedence.md).
+ * remains on either side.
  * FodmapTier::orUnknown() takes a single nullable tier, so only C29 and C31 still have a
  * realizable input whose resolved tier matches what the spec expects — both are covered below.
  *
@@ -24,8 +24,7 @@ use PHPUnit\Framework\TestCase;
  * single-source shape resolve to Unknown, not the "moderate" / "low" the spec records for them.
  * That is a genuine behavior divergence forced by the schema (the recipe-side column both
  * originally fell back to no longer exists), not an oversight — see
- * docs/todo/fodmap-streak-ingredient-tier-precedence.md, "Behavior comparison, case by case", and
- * tests/Fodmap/CASE-COVERAGE.md for the full accounting. Asserting the spec's old expected value
+ * tests/Fodmap/CASE-COVERAGE.md, rows C30 and C32, for the full accounting. Asserting the spec's old expected value
  * here would fail against real behavior; asserting the new value would misrepresent it as
  * "covering" a case whose actual spec expectation the port cannot produce.
  */
@@ -56,7 +55,7 @@ final class FodmapTierTest extends TestCase
         yield 'C29 a tier on record is returned unchanged' => [
             FodmapTier::Low, FodmapTier::Low,
         ];
-        yield 'C31 nothing on record resolves to unknown (also C30\'s realizable input — see docs/todo/fodmap-streak-ingredient-tier-precedence.md)' => [
+        yield 'C31 nothing on record resolves to unknown (also C30\'s realizable input — see tests/Fodmap/CASE-COVERAGE.md)' => [
             null, FodmapTier::Unknown,
         ];
     }

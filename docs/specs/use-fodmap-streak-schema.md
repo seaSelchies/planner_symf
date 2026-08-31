@@ -130,8 +130,8 @@ reads every row.
   `ing.ingredients?.fodmap_tier ?? ...` equivalent on the log side, only on the plan side (Step 2).
   Migration 021 added `meal_log_ingredients.ingredient_id` alongside
   `recipe_ingredients.ingredient_id`, giving both tables the same shape — but the hook's log-reading
-  code was never extended to follow it. `docs/todo/fodmap-streak-ingredient-tier-precedence.md`
-  correctly scoped `IngredientTierPrecedence` to the plan side only, based on the *hook's* text; this
+  code was never extended to follow it. The retired `IngredientTierPrecedence` was
+  correctly scoped to the plan side only, based on the *hook's* text; this
   schema shows that decision also matches the *table* shape at the time the hook was written, even
   though both tables now carry the same `ingredient_id` FK.
 

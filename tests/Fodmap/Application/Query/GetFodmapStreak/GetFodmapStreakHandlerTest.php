@@ -11,8 +11,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Covers the "single clock read reused for the whole operation" requirement from the
  * specification's Hidden dependencies section (docs/specs/use-fodmap-streak.md) — not a numbered
- * Case id, see tests/Fodmap/CASE-COVERAGE.md — and T:fodmap-streak-fetch-error-handling
- * (docs/todo/fodmap-streak-fetch-error-handling.md): a provider's fetch failure must propagate
+ * Case id, see tests/Fodmap/CASE-COVERAGE.md — and T:fodmap-streak-fetch-error-handling: a provider's fetch failure must propagate
  * out of the handler uncaught, per .claude/rules/application-layer.md rule 2.
  *
  * Also covers the Application-layer half of T:fodmap-streak-user-scoping

@@ -9,8 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Covers the controller half of the query's happy path (invariants 28, 30 — no numbered Case id,
- * see tests/Fodmap/CASE-COVERAGE.md), and T:fodmap-streak-fetch-error-handling
- * (docs/todo/fodmap-streak-fetch-error-handling.md): a fetch failure must map to a 5xx response
+ * see tests/Fodmap/CASE-COVERAGE.md), and T:fodmap-streak-fetch-error-handling: a fetch failure must map to a 5xx response
  * with the Domain exception's message, per invariant 29 — never a silently reported 0 streak.
  */
 final class ApiGetFodmapStreakControllerTest extends TestCase

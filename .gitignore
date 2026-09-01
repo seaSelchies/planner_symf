@@ -36,3 +36,4 @@ CLAUDE.local.md
 .claude/.step
 .claude/.step.live
 ### claude ###
+.env.dev

@@ -25,9 +25,17 @@ symfony server:start -d
 `php bin/phpunit` is the one that matters — it needs no database and no
 container, and it is green: 28 tests, 35 assertions.
 
-Environment variables (`DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_HOST`,
-`DATABASE_PORT`, `DATABASE_NAME`) come from `.env`, which is untracked. Nothing
-is hardcoded in PHP or YAML — invariant 6.
+`.env` is not tracked, so a fresh clone has none and the commands above will
+fail without one. Copy the template and fill it in first:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` lists every variable the application reads, with a comment on
+each. Nothing is hardcoded in PHP or YAML and no value has a literal fallback,
+so a missing one fails loudly rather than silently taking a default —
+invariant 6.
 
 ## Layout
 

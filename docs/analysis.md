@@ -104,9 +104,10 @@ guards do not watch, because there is no other way to change a guard while it is
 
 ## What is not proven
 
-**No database was ever touched.** Both suites run on hand-written fakes. The mappings validate and
-the application starts, but the first module has no migration, so its SQL has never executed.
-Everything claimed about the storage layer is a claim about code, not about behaviour.
+**No database was ever touched.** Both suites run on hand-written fakes. The mappings validate, the
+application starts, and a migration now raises the schema — but nothing runs a query against it, so
+the adapters' SQL has still never executed. Everything claimed about the storage layer is a claim
+about code, not about behaviour.
 
 **One reviewer, two runs.** How accurate it is was measured on one day, in one repository.
 

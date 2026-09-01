@@ -82,10 +82,10 @@ Green: the Domain, Application and Adapter layers of the `Fodmap` module, its
 28 tests, the mapping of six tables (Doctrine validates all six), and the query
 bus resolving its handler.
 
-Not proven: **no migration exists for those six tables**, so the SQL in
-`src/Fodmap/Infrastructure/DB/` has never executed. The tests use hand-written
-fakes and touch no database. Treat the Infrastructure layer as written but
-unrun.
+Not proven: **no test exercises the database.** A migration now raises the
+planner schema, and the mappings validate against it, but the suites run on
+hand-written fakes, so the SQL in `src/Fodmap/Infrastructure/DB/` has never
+executed. Treat the Infrastructure layer as written but unrun.
 
 Deliberate divergences from the ported source are recorded rather than hidden —
 see `tests/Fodmap/CASE-COVERAGE.md`, which accounts for every case in the

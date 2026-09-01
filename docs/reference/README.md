@@ -15,6 +15,15 @@ FODMAP streak calculation being ported.
 - Commit: `b929a2f` (2026-06-25)
 - Copied verbatim on 2026-08-29
 
+## useDayTags.ts
+
+React Native hook from the same app, the source of the day-tags module: reading
+tags for a set of dates, creating, toggling, removing, and editing a note.
+
+- Source: `src/hooks/useDayTags.ts`
+- Commit: `b929a2f` (2026-06-25)
+- Copied verbatim on 2026-08-31
+
 ## supabase/
 
 The planner app's database definition, copied whole: `schema.sql` and every file in
